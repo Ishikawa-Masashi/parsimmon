@@ -1,0 +1,16 @@
+.vscode
+
+/node_modules
+/src
+/tests
+
+.eslintrc.json
+.gitignore
+.npnignore
+.prettierrc
+package-lock.json
+
+README.md
+tsconfig.json
+vite.config.ts
+yarn.lock
