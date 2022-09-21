@@ -1,6 +1,5 @@
-'use strict';
-
 import * as Parsimmon from '../../src';
+
 describe('alt', () => {
   test('Parsimmon.alt', () => {
     const toNode = (nodeType: string) => {

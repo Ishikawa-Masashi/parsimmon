@@ -1,4 +1,88 @@
-declare var Buffer: any;
+// https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/parsimmon/index.d.ts
+// Type definitions for Parsimmon 1.0
+// Project: https://github.com/jneen/parsimmon
+// Definitions by: Bart van der Schoor <https://github.com/Bartvds>
+//                 Mizunashi Mana <https://github.com/mizunashi-mana>
+//                 Boris Cherny <https://github.com/bcherny>
+//                 Benny van Reeven <https://github.com/bvanreeven>
+// Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+export type Action<T> = (input: string, i: number) => Result<T>;
+
+/**
+ * **NOTE:** You probably will never need to use this function. Most parsing
+ * can be accomplished using `Parsimmon.regexp` and combination with
+ * `Parsimmon.seq` and `Parsimmon.alt`.
+ *
+ * You can add a primitive parser (similar to the included ones) by using
+ * `Parsimmon(fn)`. This is an example of how to create a parser that matches
+ * any character except the one provided:
+ *
+ * ```javascript
+ * function notChar(char) {
+ *   return Parsimmon(function(input, i) {
+ *     if (input.charAt(i) !== char) {
+ *       return Parsimmon.makeSuccess(i + 1, input.charAt(i));
+ *     }
+ *     return Parsimmon.makeFailure(i, 'anything different than "' + char + '"');
+ *   });
+ * }
+ * ```
+ *
+ * This parser can then be used and composed the same way all the existing
+ * ones are used and composed, for example:
+ *
+ * ```javascript
+ * var parser =
+ *   Parsimmon.seq(
+ *     Parsimmon.string('a'),
+ *     notChar('b').times(5)
+ *   );
+ * parser.parse('accccc');
+ * //=> {status: true, value: ['a', ['c', 'c', 'c', 'c', 'c']]}
+ * ```
+ */
+// export function Parsimmon<T>(fn: Action<T>): Parser<T>;
+
+export type StreamType = string;
+
+export interface Index {
+  /** zero-based character offset */
+  offset: number;
+  /** one-based line offset */
+  line: number;
+  /** one-based column offset */
+  column: number;
+}
+
+export interface Mark<T> {
+  start: Index;
+  end: Index;
+  value: T;
+}
+
+export type Result<T> = Success<T> | Failure;
+
+export interface Success<T> extends ResultInterface<T> {
+  status: true;
+  value: T;
+}
+
+export interface Failure extends ResultInterface<undefined> {
+  status: false;
+  expected: string[];
+  index: Index;
+  value: undefined;
+}
+
+export interface ResultInterface<T> {
+  status: boolean;
+  index: Index | number;
+  value?: T;
+  furthest: number;
+  expected: string[];
+}
+
 export class Parsimmon {
   _: any;
   static _supportsSet: any;
@@ -7,7 +91,7 @@ export class Parsimmon {
   }
   // -*- Core Parsing Methods -*-
 
-  parse(input: any) {
+  parse(input: string) {
     if (typeof input !== 'string' && !isBuffer(input)) {
       throw new Error(
         '.parse must be called with a string or Buffer as its argument'
@@ -523,7 +607,7 @@ function bitSeqObj(namedAlignments: any) {
 }
 
 function parseBufferFor(other: any, length: any) {
-  return new Parsimmon(function (input: any, i: any) {
+  return new Parsimmon(function (input: string, i: number) {
     ensureBuffer();
     if (i + length > input.length) {
       return makeFailure(i, length + ' bytes for ' + other);
@@ -554,7 +638,7 @@ function assertValidIntegerByteLengthFor(who: any, length: any) {
   }
 }
 
-function uintBE(length: any) {
+function uintBE(length: number) {
   assertValidIntegerByteLengthFor('uintBE', length);
   return parseBufferFor('uintBE(' + length + ')', length).map(function (
     buff: any
@@ -563,7 +647,7 @@ function uintBE(length: any) {
   });
 }
 
-function uintLE(length: any) {
+function uintLE(length: number) {
   assertValidIntegerByteLengthFor('uintLE', length);
   return parseBufferFor('uintLE(' + length + ')', length).map(function (
     buff: any
@@ -619,7 +703,7 @@ function toArray(arrLike: any) {
 }
 // -*- Helpers -*-
 
-export function isParser(obj: any): obj is Parsimmon {
+export function isParser(obj: unknown): obj is Parsimmon {
   return obj instanceof Parsimmon;
 }
 
@@ -629,7 +713,7 @@ function isArray(x: any) {
 
 function isBuffer(x: any) {
   /* global Buffer */
-  return bufferExists() && (Buffer as any).isBuffer(x);
+  return bufferExists() && Buffer.isBuffer(x);
 }
 
 export function makeSuccess(index: number, value: any) {
@@ -680,7 +764,7 @@ function mergeReplies(result: any, last: any) {
 // compute the new lineNumber and startOfLine from there so we don't have to
 // recompute from the whole input
 const lineColumnIndex: any = {};
-function makeLineColumnIndex(input: any, i: any) {
+function makeLineColumnIndex(input: string, i: number) {
   if (isBuffer(input)) {
     return {
       offset: i,
@@ -1031,7 +1115,7 @@ function formatGot(input: any, error: any) {
   return linesWithLineNumbers.join('\n');
 }
 
-function formatError(input: any, error: any) {
+export function formatError(input: string, error: any) {
   return [
     '\n',
     '-- PARSING FAILED ' + repeat('-', 50),
@@ -1140,7 +1224,7 @@ function seqObj() {
   });
 }
 
-function seqMap(...args2: any[]) {
+export function seqMap(...args2: any[]) {
   const args = [].slice.call(arguments);
   if (args.length === 0) {
     throw new Error('seqMap needs at least one argument');
@@ -1267,19 +1351,19 @@ export function regexp(re: RegExp, group = 0) {
   });
 }
 
-function succeed(value: any) {
+export function succeed(value: any) {
   return new Parsimmon(function (input: any, i: any) {
     return makeSuccess(i, value);
   });
 }
 
-function fail(expected: any) {
+export function fail(expected: any) {
   return new Parsimmon(function (input: any, i: any) {
     return makeFailure(i, expected);
   });
 }
 
-function lookahead(x: any): any {
+export function lookahead(x: any): any {
   if (isParser(x)) {
     return new Parsimmon(function (input: any, i: any) {
       const result = x._(input, i);
@@ -1357,13 +1441,13 @@ function takeWhile(predicate: any) {
   });
 }
 
-function lazy(desc: any, f?: any) {
+export function lazy(desc: any, f?: any) {
   if (arguments.length < 2) {
     f = desc;
     desc = undefined;
   }
 
-  var parser = new Parsimmon(function (input: any, i: any) {
+  const parser = new Parsimmon(function (input: any, i: any) {
     parser._ = f()._;
     return parser._(input, i);
   });
@@ -1377,17 +1461,17 @@ function lazy(desc: any, f?: any) {
 
 // -*- Fantasy Land Extras -*-
 
-function empty() {
+export function empty() {
   return fail('fantasy-land/empty');
 }
 
 // -*- Base Parsers -*-
 
-const index = new Parsimmon(function (input: any, i: any) {
+export const index = new Parsimmon(function (input: any, i: any) {
   return makeSuccess(i, makeLineColumnIndex(input, i));
 });
 
-const any = new Parsimmon(function (input: any, i: any) {
+export const any = new Parsimmon(function (input: any, i: any) {
   if (i >= input.length) {
     return makeFailure(i, 'any character/byte');
   }
@@ -1398,15 +1482,15 @@ export const all = new Parsimmon(function (input: any, i: any) {
   return makeSuccess(input.length, input.slice(i));
 });
 
-var eof = new Parsimmon(function (input: any, i: any) {
+export const eof = new Parsimmon(function (input: any, i: any) {
   if (i < input.length) {
     return makeFailure(i, 'EOF');
   }
   return makeSuccess(i, null);
 });
 
-const digit = regexp(/[0-9]/).desc('a digit');
-const digits = regexp(/[0-9]*/).desc('optional digits');
+export const digit = regexp(/[0-9]/).desc('a digit');
+export const digits = regexp(/[0-9]*/).desc('optional digits');
 export const letter = regexp(/[a-z]/i).desc('a letter');
 const letters = regexp(/[a-z]*/i).desc('optional letters');
 export const optWhitespace = regexp(/\s*/).desc('optional whitespace');
@@ -1464,30 +1548,30 @@ export const of = succeed;
 // Parsimmon['fantasy-land/empty'] = empty;
 // Parsimmon['fantasy-land/of'] = succeed;
 
-// Parsimmon.Binary = {
-//   bitSeq: bitSeq,
-//   bitSeqObj: bitSeqObj,
-//   byte: byte,
-//   buffer: parseBuffer,
-//   encodedString: encodedString,
-//   uintBE: uintBE,
-//   uint8BE: uintBE(1),
-//   uint16BE: uintBE(2),
-//   uint32BE: uintBE(4),
-//   uintLE: uintLE,
-//   uint8LE: uintLE(1),
-//   uint16LE: uintLE(2),
-//   uint32LE: uintLE(4),
-//   intBE: intBE,
-//   int8BE: intBE(1),
-//   int16BE: intBE(2),
-//   int32BE: intBE(4),
-//   intLE: intLE,
-//   int8LE: intLE(1),
-//   int16LE: intLE(2),
-//   int32LE: intLE(4),
-//   floatBE: floatBE(),
-//   floatLE: floatLE(),
-//   doubleBE: doubleBE(),
-//   doubleLE: doubleLE(),
-// };
+export const Binary = {
+  bitSeq,
+  bitSeqObj,
+  byte,
+  buffer: parseBuffer,
+  encodedString,
+  uintBE,
+  uint8BE: uintBE(1),
+  uint16BE: uintBE(2),
+  uint32BE: uintBE(4),
+  uintLE: uintLE,
+  uint8LE: uintLE(1),
+  uint16LE: uintLE(2),
+  uint32LE: uintLE(4),
+  intBE: intBE,
+  int8BE: intBE(1),
+  int16BE: intBE(2),
+  int32BE: intBE(4),
+  intLE: intLE,
+  int8LE: intLE(1),
+  int16LE: intLE(2),
+  int32LE: intLE(4),
+  floatBE: floatBE(),
+  floatLE: floatLE(),
+  doubleBE: doubleBE(),
+  doubleLE: doubleLE(),
+};
