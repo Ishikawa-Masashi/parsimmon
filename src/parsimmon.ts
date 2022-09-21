@@ -7,6 +7,8 @@
 //                 Benny van Reeven <https://github.com/bvanreeven>
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 
+import type { Reply, Result } from './types';
+
 export type Action<T> = (input: string, i: number) => Result<T>;
 
 /**
@@ -61,8 +63,6 @@ export interface Mark<T> {
   value: T;
 }
 
-export type Result<T> = Success<T> | Failure;
-
 export interface Success<T> extends ResultInterface<T> {
   status: true;
   value: T;
@@ -83,15 +83,15 @@ export interface ResultInterface<T> {
   expected: string[];
 }
 
-export class Parsimmon {
-  _: any;
+export class Parsimmon<T = any> {
+  _: (input: string, i: number) => Reply<T>;
   static _supportsSet: any;
-  constructor(action: any) {
-    this._ = action;
+  constructor(fn: (input: string, i: number) => Reply<T>) {
+    this._ = fn;
   }
   // -*- Core Parsing Methods -*-
 
-  parse(input: string) {
+  parse(input: string): Result<T> {
     if (typeof input !== 'string' && !isBuffer(input)) {
       throw new Error(
         '.parse must be called with a string or Buffer as its argument'
@@ -99,7 +99,7 @@ export class Parsimmon {
     }
     const parseResult = this.skip(eof)._(input, 0);
 
-    let result;
+    let result: Result<T>;
     if (parseResult.status) {
       result = {
         status: true,
@@ -120,7 +120,7 @@ export class Parsimmon {
   }
   // -*- Other Methods -*-
 
-  tryParse(str: string) {
+  tryParse(str: string): T {
     const result = this.parse(str);
     if (result.status) {
       return result.value;
@@ -133,12 +133,13 @@ export class Parsimmon {
     }
   }
 
-  assert(condition: any, errorMessage: any) {
+  assert(condition: (result: T) => boolean, errorMessage: string) {
     return this.chain(function (value: any) {
       return condition(value) ? succeed(value) : fail(errorMessage);
     });
   }
-  or(alternative: any) {
+
+  or<U>(alternative: Parsimmon<U>) {
     return alt(this, alternative);
   }
 
@@ -1146,7 +1147,9 @@ function anchoredRegexp(re: RegExp) {
 }
 
 // -*- Combinators -*-
-
+/**
+ * accepts a variable number of parsers that it expects to find in order, yielding an array of the results.
+ */
 export function seq(...args: any[]) {
   const parsers: any = [].slice.call(arguments);
   const numParsers = parsers.length;

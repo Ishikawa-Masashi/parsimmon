@@ -1,3 +1,5 @@
+/// <reference types="vitest" />
+
 import { defineConfig } from 'vite';
 
 // https://vitejs.dev/config/
@@ -53,5 +55,10 @@ export default defineConfig({
     rollupOptions: {
       external: ['react', 'react-dom'],
     },
+  },
+  test: {
+    globals: true, // use `describe, it, test` without importing them
+    environment: 'jsdom',
+    setupFiles: './tests/setup.ts',
   },
 });
