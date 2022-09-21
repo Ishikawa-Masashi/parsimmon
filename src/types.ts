@@ -431,7 +431,7 @@ interface Failure {
 
 //     function seqObj<T, Key extends keyof T = keyof T>(...args: Array<[Key, Parser<T[Key]>] | Parser<any>>): Parser<{ [K in Key]: T[K] }>;
 
-interface SuccessReply<T> {
+export interface SuccessReply<T> {
   status: true;
   index: number;
   value: T;
@@ -439,7 +439,7 @@ interface SuccessReply<T> {
   expected: string[];
 }
 
-interface FailureReply {
+export interface FailureReply {
   status: false;
   index: -1;
   value: null;

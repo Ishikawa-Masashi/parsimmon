@@ -1,10 +1,10 @@
-import { Parsimmon, makeSuccess, makeFailure, string, alt } from '../../src';
+import { Parser, makeSuccess, makeFailure, string, alt } from '../../src';
 
 describe('Parsimmon()', () => {
   it('should work in general', () => {
     const good = 'just a Q';
     const bad = 'all I wanted was a Q';
-    const justQ = new Parsimmon((str: string, i: number) => {
+    const justQ = new Parser((str: string, i: number) => {
       if (str.charAt(i) === 'Q') {
         return makeSuccess(i + 1, good);
       } else {
@@ -43,7 +43,7 @@ describe('Parsimmon()', () => {
 
   it('unsafeUnion works on poorly formatted custom parser', () => {
     const p1 = string('a').or(string('b'));
-    const p2 = new Parsimmon((str: string, i: number) => {
+    const p2 = new Parser((str: string, i: number) => {
       return {
         status: false,
         index: -1,

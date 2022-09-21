@@ -7,7 +7,7 @@
 //                 Benny van Reeven <https://github.com/bvanreeven>
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 
-import type { Reply, Result } from './types';
+import type { Reply, Result, SuccessReply } from './types';
 
 export type Action<T> = (input: string, i: number) => Result<T>;
 
@@ -83,14 +83,18 @@ export interface ResultInterface<T> {
   expected: string[];
 }
 
-export class Parsimmon<T = any> {
+export class Parser<T = any> {
   _: (input: string, i: number) => Reply<T>;
   static _supportsSet: any;
   constructor(fn: (input: string, i: number) => Reply<T>) {
     this._ = fn;
   }
+
   // -*- Core Parsing Methods -*-
 
+  /**
+   * parse the string
+   */
   parse(input: string): Result<T> {
     if (typeof input !== 'string' && !isBuffer(input)) {
       throw new Error(
@@ -118,8 +122,14 @@ export class Parsimmon<T = any> {
 
     return result;
   }
+
   // -*- Other Methods -*-
 
+  /**
+   * Like parser.parse(input) but either returns the parsed value or throws
+   * an error on failure. The error object contains additional properties
+   * about the error.
+   */
   tryParse(str: string): T {
     const result = this.parse(str);
     if (result.status) {
@@ -133,34 +143,58 @@ export class Parsimmon<T = any> {
     }
   }
 
-  assert(condition: (result: T) => boolean, errorMessage: string) {
-    return this.chain(function (value: any) {
-      return condition(value) ? succeed(value) : fail(errorMessage);
-    });
+  /**
+   * Passes the result of `parser` to the function `condition`,
+   * which returns a boolean. If the the condition is false, returns
+   * a failed parse with the given `message`. Else it returns the
+   * original result of `parser`.
+   */
+  assert(condition: (result: T) => boolean, errorMessage: string): Parser<T> {
+    return this.chain((value) =>
+      condition(value) ? succeed(value) : fail(errorMessage)
+    );
   }
 
-  or<U>(alternative: Parsimmon<U>) {
+  /**
+   * returns a new parser which tries parser, and if it fails uses otherParser.
+   */
+  or<U>(alternative: Parser<U>): Parser<T | U> {
     return alt(this, alternative);
   }
 
-  trim(parser: any) {
+  /**
+   * expects anotherParser before and after parser, yielding the result of parser
+   */
+  trim<U>(parser: Parser<U>): Parser<T> {
     return this.wrap(parser, parser);
   }
 
-  wrap(leftParser: any, rightParser: any) {
-    return seqMap(
-      leftParser,
-      this,
-      rightParser,
-      function (left: any, middle: any) {
-        return middle;
-      }
-    );
-  }
-  thru(wrapper: any) {
-    return wrapper(this);
+  /**
+   * Expects the parser before before parser and after after parser.
+   */
+  wrap(leftParser: Parser<any>, rightParser: Parser<any>): Parser<T> {
+    return seqMap(leftParser, this, rightParser, (left, middle) => middle);
   }
 
+  /**
+   * returns wrapper(this) from the parser. Useful for custom functions used
+   * to wrap your parsers, while keeping with Parsimmon chaining style.
+   */
+  thru<U>(call: (wrapper: Parser<T>) => Parser<U>): Parser<U> {
+    return call(this);
+  }
+
+  /**
+   * returns a new parser which tries parser, and on success calls the given function
+   * with the result of the parse, which is expected to return another parser.
+   */
+  then<U>(call: (result: T) => Parser<U>): Parser<U>;
+
+  /**
+   * expects anotherParser to follow parser, and yields the result of anotherParser.
+   * NB: the result of parser here is ignored.
+   */
+  then<U>(anotherParser: Parser<U>): Parser<U>;
   then(next: any) {
     assertParser(next);
     return seq(this, next).map(function (results: any) {
@@ -168,15 +202,16 @@ export class Parsimmon<T = any> {
     });
   }
 
-  many() {
-    const self = this;
-
-    return new Parsimmon(function (input: any, i: any) {
+  /**
+   * expects parser zero or more times, and yields an array of the results.
+   */
+  many(): Parser<T[]> {
+    return new Parser((input, i) => {
       const accum = [];
       let result = undefined;
 
       for (;;) {
-        result = mergeReplies(self._(input, i), result);
+        result = mergeReplies(this._(input, i), result);
         if (result.status) {
           if (i === result.index) {
             throw new Error(
@@ -192,9 +227,14 @@ export class Parsimmon<T = any> {
       }
     });
   }
-  tieWith(separator: any) {
+
+  /**
+   * When called on a parser yielding an array of strings, yields all their strings
+   * concatenated with the separator. Asserts that its input is actually an array of strings.
+   */
+  tieWith(separator: string): Parser<string> {
     assertString(separator);
-    return this.map(function (args: any) {
+    return this.map(function (args: string[]) {
       assertArray(args);
       if (args.length) {
         assertString(args[0]);
@@ -210,18 +250,31 @@ export class Parsimmon<T = any> {
     });
   }
 
+  /**
+   * Equivalent to parser.tieWith("").
+   *
+   * Note: parser.tie() is usually used after Parsimmon.seq(...parsers) or parser.many().
+   */
   tie() {
     return this.tieWith('');
   }
 
-  times(min: any, max?: any) {
+  /**
+   * expects parser exactly n times, and yields an array of the results.
+   */
+  times(n: number): Parser<T[]>;
+  /**
+   * expects parser between min and max times, and yields an array of the results.
+   */
+  // tslint:disable-next-line:unified-signatures
+  times(min: number, max?: number): Parser<T[]> {
     const self = this;
     if (arguments.length < 2) {
       max = min;
     }
     assertNumber(min);
     assertNumber(max);
-    return new Parsimmon(function (input: any, i: any) {
+    return new Parser(function (input: any, i: any) {
       const accum = [];
       let result = undefined;
       let prevResult = undefined;
@@ -265,10 +318,15 @@ export class Parsimmon<T = any> {
     });
   }
 
-  map(fn: any) {
+  /**
+   * transforms the output of parser with the given function.
+   */
+  map<U>(fn: (result: T) => U): Parser<U>;
+  map<U>(fn: (result: string[]) => U): Parser<U>;
+  map<U>(fn: (result: any) => U): Parser<U> {
     assertFunction(fn);
     const self = this;
-    return new Parsimmon(function (input: any, i: any) {
+    return new Parser(function (input: any, i: any) {
       const result = self._(input, i);
       if (!result.status) {
         return result;
@@ -280,7 +338,7 @@ export class Parsimmon<T = any> {
   contramap(fn: any) {
     assertFunction(fn);
     const self = this;
-    return new Parsimmon(function (input: any, i: any) {
+    return new Parser(function (input: any, i: any) {
       const result = self.parse(fn(input.slice(i)));
       if (!result.status) {
         return result;
@@ -353,7 +411,7 @@ export class Parsimmon<T = any> {
       expected = [expected];
     }
     const self = this;
-    return new Parsimmon(function (input: any, i: any) {
+    return new Parser(function (input: any, i: any) {
       const reply = self._(input, i);
       if (!reply.status) {
         reply.expected = expected;
@@ -372,9 +430,9 @@ export class Parsimmon<T = any> {
     });
   }
 
-  chain(f: any) {
+  chain<U>(f: (result: T) => Parser<U>): Parser<U> {
     const self = this;
-    return new Parsimmon(function (input: any, i: any) {
+    return new Parser(function (input: any, i: any) {
       const result = self._(input, i);
       if (!result.status) {
         return result;
@@ -395,7 +453,7 @@ export class Parsimmon<T = any> {
   ['fantasy-land/map'] = this.map;
 }
 
-const _ = Parsimmon.prototype;
+const _ = Parser.prototype;
 
 function times(n: any, f: any) {
   let i = 0;
@@ -486,11 +544,11 @@ function bufferExists() {
 }
 
 function setExists() {
-  if (Parsimmon._supportsSet !== undefined) {
-    return Parsimmon._supportsSet;
+  if (Parser._supportsSet !== undefined) {
+    return Parser._supportsSet;
   }
   const exists = typeof Set !== 'undefined';
-  Parsimmon._supportsSet = exists;
+  Parser._supportsSet = exists;
   return exists;
 }
 
@@ -525,7 +583,7 @@ function bitSeq(alignments: any) {
     );
   }
 
-  return new Parsimmon(function (input: any, i: any) {
+  return new Parser(function (input: any, i: any) {
     const newPos = bytes + i;
     if (newPos > input.length) {
       return makeFailure(i, bytes.toString() + ' bytes');
@@ -608,7 +666,7 @@ function bitSeqObj(namedAlignments: any) {
 }
 
 function parseBufferFor(other: any, length: any) {
-  return new Parsimmon(function (input: string, i: number) {
+  return new Parser(function (input: string, i: number) {
     ensureBuffer();
     if (i + length > input.length) {
       return makeFailure(i, length + ' bytes for ' + other);
@@ -704,8 +762,8 @@ function toArray(arrLike: any) {
 }
 // -*- Helpers -*-
 
-export function isParser(obj: unknown): obj is Parsimmon {
-  return obj instanceof Parsimmon;
+export function isParser(obj: unknown): obj is Parser {
+  return obj instanceof Parser;
 }
 
 function isArray(x: any) {
@@ -717,7 +775,7 @@ function isBuffer(x: any) {
   return bufferExists() && Buffer.isBuffer(x);
 }
 
-export function makeSuccess(index: number, value: any) {
+export function makeSuccess<T>(index: number, value: T): SuccessReply<T> {
   return {
     status: true,
     index: index,
@@ -1156,7 +1214,7 @@ export function seq(...args: any[]) {
   for (let j = 0; j < numParsers; j += 1) {
     assertParser(parsers[j]);
   }
-  return new Parsimmon(function (input: any, i: any) {
+  return new Parser(function (input: any, i: any) {
     let result;
     const accum = new Array(numParsers);
     for (let j = 0; j < numParsers; j += 1) {
@@ -1201,7 +1259,7 @@ function seqObj() {
   if (totalKeys === 0) {
     throw new Error('seqObj expects at least one named parser, found zero');
   }
-  return new Parsimmon(function (input: any, i: any) {
+  return new Parser(function (input: any, i: any) {
     let result;
     const accum: any = {};
     for (let j = 0; j < numParsers; j += 1) {
@@ -1227,6 +1285,103 @@ function seqObj() {
   });
 }
 
+/**
+ * Matches all parsers sequentially, and passes their results as the arguments to a function.
+ * Similar to calling Parsimmon.seq and then .map, but the values are not put in an array.
+ */
+export function seqMap<T, U>(p1: Parser<T>, cb: (a1: T) => U): Parser<U>;
+export function seqMap<T, U, V>(
+  p1: Parser<T>,
+  p2: Parser<U>,
+  cb: (a1: T, a2: U) => V
+): Parser<V>;
+export function seqMap<T, U, V, W>(
+  p1: Parser<T>,
+  p2: Parser<U>,
+  p3: Parser<V>,
+  cb: (a1: T, a2: U, a3: V) => W
+): Parser<W>;
+export function seqMap<T, U, V, W, X>(
+  p1: Parser<T>,
+  p2: Parser<U>,
+  p3: Parser<V>,
+  p4: Parser<W>,
+  cb: (a1: T, a2: U, a3: V, a4: W) => X
+): Parser<X>;
+export function seqMap<T, U, V, W, X, Y>(
+  p1: Parser<T>,
+  p2: Parser<U>,
+  p3: Parser<V>,
+  p4: Parser<W>,
+  p5: Parser<X>,
+  cb: (a1: T, a2: U, a3: V, a4: W, a5: X) => Y
+): Parser<Y>;
+export function seqMap<T, U, V, W, X, Y, Z>(
+  p1: Parser<T>,
+  p2: Parser<U>,
+  p3: Parser<V>,
+  p4: Parser<W>,
+  p5: Parser<X>,
+  p6: Parser<Y>,
+  cb: (a1: T, a2: U, a3: V, a4: W, a5: X, a6: Y) => Z
+): Parser<Z>;
+export function seqMap<T, U, V, W, X, Y, Z, A>(
+  p1: Parser<T>,
+  p2: Parser<U>,
+  p3: Parser<V>,
+  p4: Parser<W>,
+  p5: Parser<X>,
+  p6: Parser<Y>,
+  p7: Parser<Z>,
+  cb: (a1: T, a2: U, a3: V, a4: W, a5: X, a6: Y, a7: Z) => A
+): Parser<A>;
+export function seqMap<T, U, V, W, X, Y, Z, A, B>(
+  p1: Parser<T>,
+  p2: Parser<U>,
+  p3: Parser<V>,
+  p4: Parser<W>,
+  p5: Parser<X>,
+  p6: Parser<Y>,
+  p7: Parser<Z>,
+  p8: Parser<A>,
+  cb: (a1: T, a2: U, a3: V, a4: W, a5: X, a6: Y, a7: Z, a8: A) => B
+): Parser<B>;
+export function seqMap<T, U, V, W, X, Y, Z, A, B, C>(
+  p1: Parser<T>,
+  p2: Parser<U>,
+  p3: Parser<V>,
+  p4: Parser<W>,
+  p5: Parser<X>,
+  p6: Parser<Y>,
+  p7: Parser<Z>,
+  p8: Parser<A>,
+  p9: Parser<B>,
+  cb: (a1: T, a2: U, a3: V, a4: W, a5: X, a6: Y, a7: Z, a8: A, a9: B) => C
+): Parser<C>;
+export function seqMap<T, U, V, W, X, Y, Z, A, B, C, D>(
+  p1: Parser<T>,
+  p2: Parser<U>,
+  p3: Parser<V>,
+  p4: Parser<W>,
+  p5: Parser<X>,
+  p6: Parser<Y>,
+  p7: Parser<Z>,
+  p8: Parser<A>,
+  p9: Parser<B>,
+  p10: Parser<C>,
+  cb: (
+    a1: T,
+    a2: U,
+    a3: V,
+    a4: W,
+    a5: X,
+    a6: Y,
+    a7: Z,
+    a8: A,
+    a9: B,
+    a10: C
+  ) => D
+): Parser<D>;
 export function seqMap(...args2: any[]) {
   const args = [].slice.call(arguments);
   if (args.length === 0) {
@@ -1264,7 +1419,7 @@ export function alt(...args: any[]) {
   for (let j = 0; j < numParsers; j += 1) {
     assertParser(parsers[j]);
   }
-  return new Parsimmon(function (input: any, i: any) {
+  return new Parser(function (input: any, i: any) {
     let result;
     for (let j = 0; j < parsers.length; j += 1) {
       result = mergeReplies(parsers[j]._(input, i), result);
@@ -1295,7 +1450,7 @@ function sepBy1(parser: any, separator: any) {
 export function string(str: any) {
   assertString(str);
   const expected = "'" + str + "'";
-  return new Parsimmon(function (input: any, i: any) {
+  return new Parser(function (input: any, i: any) {
     const j = i + str.length;
     const head = input.slice(i, j);
     if (head === str) {
@@ -1319,7 +1474,7 @@ function byte(b: any) {
     );
   }
   const expected = (b > 0xf ? '0x' : '0x0') + b.toString(16);
-  return new Parsimmon(function (input: any, i: any) {
+  return new Parser(function (input: any, i: any) {
     const head = get(input, i);
     if (head === b) {
       return makeSuccess(i + 1, head);
@@ -1338,7 +1493,7 @@ export function regexp(re: RegExp, group = 0) {
   // }
   const anchored = anchoredRegexp(re);
   const expected = '' + re;
-  return new Parsimmon(function (input: any, i: any) {
+  return new Parser(function (input: any, i: any) {
     const match = anchored.exec(input.slice(i));
     if (match) {
       if (0 <= group && group <= match.length) {
@@ -1355,20 +1510,20 @@ export function regexp(re: RegExp, group = 0) {
 }
 
 export function succeed(value: any) {
-  return new Parsimmon(function (input: any, i: any) {
+  return new Parser(function (input: any, i: any) {
     return makeSuccess(i, value);
   });
 }
 
 export function fail(expected: any) {
-  return new Parsimmon(function (input: any, i: any) {
+  return new Parser(function (input: any, i: any) {
     return makeFailure(i, expected);
   });
 }
 
 export function lookahead(x: any): any {
   if (isParser(x)) {
-    return new Parsimmon(function (input: any, i: any) {
+    return new Parser(function (input: any, i: any) {
       const result = x._(input, i);
       result.index = i;
       result.value = '';
@@ -1384,7 +1539,7 @@ export function lookahead(x: any): any {
 
 function notFollowedBy(parser: any) {
   assertParser(parser);
-  return new Parsimmon(function (input: any, i: any) {
+  return new Parser(function (input: any, i: any) {
     const result = parser._(input, i);
     const text = input.slice(i, result.index);
     return result.status
@@ -1395,7 +1550,7 @@ function notFollowedBy(parser: any) {
 
 function test(predicate: any) {
   assertFunction(predicate);
-  return new Parsimmon(function (input: any, i: any) {
+  return new Parser(function (input: any, i: any) {
     const char = get(input, i);
     if (i < input.length && predicate(char)) {
       return makeSuccess(i + 1, char);
@@ -1405,7 +1560,7 @@ function test(predicate: any) {
   });
 }
 
-function oneOf(str: any) {
+export function oneOf(str: any) {
   const expected = str.split('');
   for (let idx = 0; idx < expected.length; idx++) {
     expected[idx] = "'" + expected[idx] + "'";
@@ -1415,14 +1570,14 @@ function oneOf(str: any) {
   }).desc(expected);
 }
 
-function noneOf(str: any) {
+export function noneOf(str: any) {
   return test(function (ch: any) {
     return str.indexOf(ch) < 0;
   }).desc("none of '" + str + "'");
 }
 
 export function custom(parsingFunction: any) {
-  return new Parsimmon(parsingFunction(makeSuccess, makeFailure));
+  return new Parser(parsingFunction(makeSuccess, makeFailure));
 }
 
 // TODO[ES5]: Improve error message using JSON.stringify eventually.
@@ -1435,7 +1590,7 @@ function range(begin: any, end: any) {
 function takeWhile(predicate: any) {
   assertFunction(predicate);
 
-  return new Parsimmon(function (input: any, i: any) {
+  return new Parser(function (input: any, i: any) {
     let j = i;
     while (j < input.length && predicate(get(input, j))) {
       j++;
@@ -1450,7 +1605,7 @@ export function lazy(desc: any, f?: any) {
     desc = undefined;
   }
 
-  const parser = new Parsimmon(function (input: any, i: any) {
+  const parser = new Parser(function (input: any, i: any) {
     parser._ = f()._;
     return parser._(input, i);
   });
@@ -1470,22 +1625,22 @@ export function empty() {
 
 // -*- Base Parsers -*-
 
-export const index = new Parsimmon(function (input: any, i: any) {
+export const index = new Parser(function (input: any, i: any) {
   return makeSuccess(i, makeLineColumnIndex(input, i));
 });
 
-export const any = new Parsimmon(function (input: any, i: any) {
+export const any = new Parser(function (input: any, i: any) {
   if (i >= input.length) {
     return makeFailure(i, 'any character/byte');
   }
   return makeSuccess(i + 1, get(input, i));
 });
 
-export const all = new Parsimmon(function (input: any, i: any) {
+export const all = new Parser(function (input: any, i: any) {
   return makeSuccess(input.length, input.slice(i));
 });
 
-export const eof = new Parsimmon(function (input: any, i: any) {
+export const eof = new Parser(function (input: any, i: any) {
   if (i < input.length) {
     return makeFailure(i, 'EOF');
   }
