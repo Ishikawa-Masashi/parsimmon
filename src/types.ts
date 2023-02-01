@@ -259,7 +259,7 @@ interface Failure {
 //         of<U>(result: U): Parser<U>;
 //     }
 
-//     type UnParser<T> = T extends Parser<infer U> ? U : never;
+// export type UnParser<T> = T extends Parser<infer U> ? U : never;
 
 //     /**
 //      * Alias of `Parsimmon(fn)` for backwards compatibility.
@@ -449,9 +449,9 @@ export interface FailureReply {
 
 export type Reply<T> = SuccessReply<T> | FailureReply;
 
-//     type SuccessFunctionType<U> = (index: number, result: U) => Reply<U>;
-//     type FailureFunctionType<U> = (index: number, msg: string) => Reply<U>;
-//     type ParseFunctionType<U> = (stream: StreamType, index: number) => Reply<U>;
+type SuccessFunctionType<U> = (index: number, result: U) => Reply<U>;
+type FailureFunctionType<U> = (index: number, msg: string) => Reply<U>;
+type ParseFunctionType<U> = (stream: StreamType, index: number) => Reply<U>;
 //     /**
 //      * allows to add custom primitive parsers.
 //      */

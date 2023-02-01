@@ -1,87 +1,4 @@
-// https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/parsimmon/index.d.ts
-// Type definitions for Parsimmon 1.0
-// Project: https://github.com/jneen/parsimmon
-// Definitions by: Bart van der Schoor <https://github.com/Bartvds>
-//                 Mizunashi Mana <https://github.com/mizunashi-mana>
-//                 Boris Cherny <https://github.com/bcherny>
-//                 Benny van Reeven <https://github.com/bvanreeven>
-// Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
-
-import type { Reply, Result, SuccessReply } from './types';
-
-export type Action<T> = (input: string, i: number) => Result<T>;
-
-/**
- * **NOTE:** You probably will never need to use this function. Most parsing
- * can be accomplished using `Parsimmon.regexp` and combination with
- * `Parsimmon.seq` and `Parsimmon.alt`.
- *
- * You can add a primitive parser (similar to the included ones) by using
- * `Parsimmon(fn)`. This is an example of how to create a parser that matches
- * any character except the one provided:
- *
- * ```javascript
- * function notChar(char) {
- *   return Parsimmon(function(input, i) {
- *     if (input.charAt(i) !== char) {
- *       return Parsimmon.makeSuccess(i + 1, input.charAt(i));
- *     }
- *     return Parsimmon.makeFailure(i, 'anything different than "' + char + '"');
- *   });
- * }
- * ```
- *
- * This parser can then be used and composed the same way all the existing
- * ones are used and composed, for example:
- *
- * ```javascript
- * var parser =
- *   Parsimmon.seq(
- *     Parsimmon.string('a'),
- *     notChar('b').times(5)
- *   );
- * parser.parse('accccc');
- * //=> {status: true, value: ['a', ['c', 'c', 'c', 'c', 'c']]}
- * ```
- */
-// export function Parsimmon<T>(fn: Action<T>): Parser<T>;
-
-export type StreamType = string;
-
-export interface Index {
-  /** zero-based character offset */
-  offset: number;
-  /** one-based line offset */
-  line: number;
-  /** one-based column offset */
-  column: number;
-}
-
-export interface Mark<T> {
-  start: Index;
-  end: Index;
-  value: T;
-}
-
-export interface Success<T> extends ResultInterface<T> {
-  status: true;
-  value: T;
-}
-
-export interface Failure extends ResultInterface<undefined> {
-  status: false;
-  expected: string[];
-  index: Index;
-  value: undefined;
-}
-
-export interface ResultInterface<T> {
-  status: boolean;
-  index: Index | number;
-  value?: T;
-  furthest: number;
-  expected: string[];
-}
+import type { FailureReply, Reply, Result, SuccessReply } from './types';
 
 export class Parser<T = any> {
   _: (input: string, i: number) => Reply<T>;
@@ -268,18 +185,18 @@ export class Parser<T = any> {
    */
   // tslint:disable-next-line:unified-signatures
   times(min: number, max?: number): Parser<T[]> {
-    const self = this;
     if (arguments.length < 2) {
       max = min;
     }
     assertNumber(min);
     assertNumber(max);
-    return new Parser(function (input: any, i: any) {
+    return new Parser((input, i) => {
       const accum = [];
       let result = undefined;
       let prevResult = undefined;
-      for (var times = 0; times < min; times += 1) {
-        result = self._(input, i);
+      let times = 0;
+      for (; times < min; times += 1) {
+        result = this._(input, i);
         prevResult = mergeReplies(result, prevResult);
         if (result.status) {
           i = result.index;
@@ -289,7 +206,7 @@ export class Parser<T = any> {
         }
       }
       for (; times < max; times += 1) {
-        result = self._(input, i);
+        result = this._(input, i);
         prevResult = mergeReplies(result, prevResult);
         if (result.status) {
           i = result.index;
@@ -302,13 +219,11 @@ export class Parser<T = any> {
     });
   }
 
-  result(res: any) {
-    return this.map(function () {
-      return res;
-    });
+  result<U>(res: U) {
+    return this.map(() => res);
   }
 
-  atMost(n: any) {
+  atMost(n: number) {
     return this.times(0, n);
   }
 
@@ -785,7 +700,12 @@ export function makeSuccess<T>(index: number, value: T): SuccessReply<T> {
   };
 }
 
-export function makeFailure(index: any, expected: any) {
+/**
+ * To be used inside of Parsimmon(fn). Generates an object describing how
+ * far the unsuccessful parse went (index), and what kind of syntax it
+ * expected to see (expectation). See documentation for Parsimmon(fn).
+ */
+export function makeFailure(index: any, expected: any): FailureReply {
   if (!isArray(expected)) {
     expected = [expected];
   }
@@ -934,7 +854,7 @@ function assertArray(x: any) {
   }
 }
 
-function assertNumber(x: any) {
+function assertNumber(x: any): x is number {
   if (typeof x !== 'number') {
     throw new Error('not a number: ' + x);
   }
@@ -1205,16 +1125,58 @@ function anchoredRegexp(re: RegExp) {
 }
 
 // -*- Combinators -*-
+
+type UnParser<T> = T extends Parser<infer U> ? U : never;
+
 /**
  * accepts a variable number of parsers that it expects to find in order, yielding an array of the results.
  */
+export function seq<T>(p1: Parser<T>): Parser<[T]>;
+export function seq<T, U>(p1: Parser<T>, p2: Parser<U>): Parser<[T, U]>;
+export function seq<T, U, V>(
+  p1: Parser<T>,
+  p2: Parser<U>,
+  p3: Parser<V>
+): Parser<[T, U, V]>;
+export function seq<T, U, V, W>(
+  p1: Parser<T>,
+  p2: Parser<U>,
+  p3: Parser<V>,
+  p4: Parser<W>
+): Parser<[T, U, V, W]>;
+export function seq<T, U, V, W, X>(
+  p1: Parser<T>,
+  p2: Parser<U>,
+  p3: Parser<V>,
+  p4: Parser<W>,
+  p5: Parser<X>
+): Parser<[T, U, V, W, X]>;
+export function seq<T, U, V, W, X, Y>(
+  p1: Parser<T>,
+  p2: Parser<U>,
+  p3: Parser<V>,
+  p4: Parser<W>,
+  p5: Parser<X>,
+  p6: Parser<Y>
+): Parser<[T, U, V, W, X, Y]>;
+export function seq<T, U, V, W, X, Y, Z>(
+  p1: Parser<T>,
+  p2: Parser<U>,
+  p3: Parser<V>,
+  p4: Parser<W>,
+  p5: Parser<X>,
+  p6: Parser<Y>,
+  p7: Parser<Z>
+): Parser<[T, U, V, W, X, Y, Z]>;
+export function seq<T>(...parsers: Array<Parser<T>>): Parser<T[]>;
+export function seq<T extends any[]>(...parsers: T): Parser<UnParser<T>>;
 export function seq(...args: any[]) {
   const parsers: any = [].slice.call(arguments);
   const numParsers = parsers.length;
   for (let j = 0; j < numParsers; j += 1) {
     assertParser(parsers[j]);
   }
-  return new Parser(function (input: any, i: any) {
+  return new Parser(function (input, i) {
     let result;
     const accum = new Array(numParsers);
     for (let j = 0; j < numParsers; j += 1) {
@@ -1548,9 +1510,12 @@ function notFollowedBy(parser: any) {
   });
 }
 
-function test(predicate: any) {
+/**
+ * Returns a parser that yield a single character if it passes the predicate
+ */
+function test(predicate: (char: string) => boolean): Parser<string> {
   assertFunction(predicate);
-  return new Parser(function (input: any, i: any) {
+  return new Parser((input, i) => {
     const char = get(input, i);
     if (i < input.length && predicate(char)) {
       return makeSuccess(i + 1, char);
@@ -1560,14 +1525,15 @@ function test(predicate: any) {
   });
 }
 
-export function oneOf(str: any) {
+/**
+ * Returns a parser that looks for exactly one character from string, and yields that character.
+ */
+export function oneOf(str: string): Parser<string> {
   const expected = str.split('');
   for (let idx = 0; idx < expected.length; idx++) {
     expected[idx] = "'" + expected[idx] + "'";
   }
-  return test(function (ch: any) {
-    return str.indexOf(ch) >= 0;
-  }).desc(expected);
+  return test((ch) => str.indexOf(ch) >= 0).desc(expected);
 }
 
 export function noneOf(str: any) {
@@ -1599,13 +1565,19 @@ function takeWhile(predicate: any) {
   });
 }
 
-export function lazy(desc: any, f?: any) {
+/**
+ * accepts a function that returns a parser, which is evaluated the first time the parser is used.
+ * This is useful for referencing parsers that haven't yet been defined.
+ */
+export function lazy<U>(f: () => Parser<U>): Parser<U>;
+export function lazy<U>(description: string, f: () => Parser<U>): Parser<U>;
+export function lazy<U>(desc: any, f?: any): Parser<U> {
   if (arguments.length < 2) {
     f = desc;
     desc = undefined;
   }
 
-  const parser = new Parser(function (input: any, i: any) {
+  const parser: Parser<U> = new Parser(function (input, i) {
     parser._ = f()._;
     return parser._(input, i);
   });
