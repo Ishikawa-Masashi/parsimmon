@@ -2,9 +2,7 @@ import * as Parsimmon from '../../src';
 
 describe('chain', () => {
   it('asserts that a parser is returned', () => {
-    const parser1 = Parsimmon.letter.chain(function () {
-      return 'not a parser';
-    });
+    const parser1 = Parsimmon.letter.chain(() => 'not a parser');
     // assert.throws(function () {
     //   parser1.parse('x');
     // });

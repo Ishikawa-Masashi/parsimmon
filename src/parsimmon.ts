@@ -1,8 +1,8 @@
 import type { FailureReply, Reply, Result, SuccessReply } from './types';
 
-export class Parser<T> {
+export class Parser<T = unknown> {
   _: (input: string, i: number) => Reply<T>;
-  static _supportsSet: any;
+  static _supportsSet: boolean;
   constructor(fn: (input: string, i: number) => Reply<T>) {
     this._ = fn;
   }
@@ -345,7 +345,7 @@ export class Parser<T> {
     });
   }
 
-  chain<U>(f: (result: T) => Parser<U>): Parser<U> {
+  chain<U>(f: (next: T) => Parser<U>): Parser<U> {
     const self = this;
     return new Parser(function (input: any, i: any) {
       const result = self._(input, i);
@@ -1409,7 +1409,7 @@ function sepBy1(parser: any, separator: any) {
 
 // -*- Constructors -*-
 
-export function string(str: any) {
+export function string(str: string) {
   assertString(str);
   const expected = "'" + str + "'";
   return new Parser(function (input: any, i: any) {
