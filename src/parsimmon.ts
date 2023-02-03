@@ -1,6 +1,6 @@
 import type { FailureReply, Reply, Result, SuccessReply } from './types';
 
-export class Parser<T = any> {
+export class Parser<T> {
   _: (input: string, i: number) => Reply<T>;
   static _supportsSet: any;
   constructor(fn: (input: string, i: number) => Reply<T>) {
@@ -75,7 +75,7 @@ export class Parser<T = any> {
   /**
    * returns a new parser which tries parser, and if it fails uses otherParser.
    */
-  or<U>(alternative: Parser<U>): Parser<T | U> {
+  or(alternative: Parser<T>): Parser<T> {
     return alt(this, alternative);
   }
 
@@ -1372,7 +1372,7 @@ export function createLanguage(parsers: any) {
   return language;
 }
 
-export function alt(...args: any[]) {
+export function alt<U>(...args: Parser<U>[]) {
   const parsers: any = [].slice.call(arguments);
   const numParsers = parsers.length;
   if (numParsers === 0) {
@@ -1381,7 +1381,7 @@ export function alt(...args: any[]) {
   for (let j = 0; j < numParsers; j += 1) {
     assertParser(parsers[j]);
   }
-  return new Parser(function (input: any, i: any) {
+  return new Parser<U>((input, i) => {
     let result;
     for (let j = 0; j < parsers.length; j += 1) {
       result = mergeReplies(parsers[j]._(input, i), result);
@@ -1478,7 +1478,7 @@ export function succeed(value: any) {
 }
 
 export function fail(expected: any) {
-  return new Parser(function (input: any, i: any) {
+  return new Parser<never>(function (input: any, i: any) {
     return makeFailure(i, expected);
   });
 }
