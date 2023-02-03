@@ -1553,10 +1553,10 @@ function range(begin: any, end: any) {
   }).desc(begin + '-' + end);
 }
 
-function takeWhile(predicate: any) {
+export function takeWhile(predicate: (char: string) => boolean) {
   assertFunction(predicate);
 
-  return new Parser(function (input: any, i: any) {
+  return new Parser((input, i) => {
     let j = i;
     while (j < input.length && predicate(get(input, j))) {
       j++;
