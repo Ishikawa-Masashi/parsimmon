@@ -158,95 +158,109 @@ export interface Parser<T> {
    * to wrap your parsers, while keeping with Parsimmon chaining style.
    */
   thru<U>(call: (wrapper: Parser<T>) => Parser<U>): Parser<U>;
-  //         /**
-  //          * expects anotherParser before and after parser, yielding the result of parser
-  //          */
-  //         trim<U>(anotherParser: Parser<U>): Parser<T>;
+
+  /**
+   * expects anotherParser before and after parser, yielding the result of parser
+   */
+  trim<U>(anotherParser: Parser<U>): Parser<T>;
 
   /**
    * transforms the output of parser with the given function.
    */
   map<U>(call: (result: T) => U): Parser<U>;
-  //         /**
-  //          * returns a new parser with the same behavior, but which yields aResult.
-  //          */
-  //         result<U>(aResult: U): Parser<U>;
-  //         /**
-  //          * returns a new parser that returns the fallback value if the first parser failed.
-  //          */
-  //         fallback<U>(fallbackValue: U): Parser<T | U>;
-  //         /**
-  //          * expects otherParser after parser, but preserves the yield value of parser.
-  //          */
-  //         skip<U>(otherParser: Parser<U>): Parser<T>;
-  //         /**
-  //          * Expects the parser before before parser and after after parser.
-  //          */
-  //         wrap(before: Parser<any>, after: Parser<any>): Parser<T>;
-  //         /**
-  //          * Returns a parser that looks for anything but whatever anotherParser wants to
-  //          * parse, and does not consume it. Yields the same result as parser. Equivalent to
-  //          * parser.skip(Parsimmon.notFollowedBy(anotherParser)).
-  //          */
-  //         notFollowedBy(anotherParser: Parser<any>): Parser<T>;
-  //         /**
-  //          * Returns a parser that looks for whatever arg wants to parse, but does not
-  //          * consume it. Yields the same result as parser. Equivalent to
-  //          * parser.skip(Parsimmon.lookahead(anotherParser)).
-  //          */
-  //         lookahead(arg: Parser<any> | string | RegExp): Parser<T>;
-  //         /**
-  //          * Equivalent to parser.tieWith("").
-  //          *
-  //          * Note: parser.tie() is usually used after Parsimmon.seq(...parsers) or parser.many().
-  //          */
-  //         tie(): Parser<string>;
-  //         /**
-  //          * When called on a parser yielding an array of strings, yields all their strings
-  //          * concatenated with the separator. Asserts that its input is actually an array of strings.
-  //          */
-  //         tieWith(join: string): Parser<string>;
-  //         /**
-  //          * expects parser zero or more times, and yields an array of the results.
-  //          */
-  //         many(): Parser<T[]>;
-  //         /**
-  //          * expects parser exactly n times, and yields an array of the results.
-  //          */
-  //         times(n: number): Parser<T[]>;
-  //         /**
-  //          * expects parser between min and max times, and yields an array of the results.
-  //          */
-  //         // tslint:disable-next-line:unified-signatures
-  //         times(min: number, max: number): Parser<T[]>;
-  //         /**
-  //          * expects parser at most n times. Yields an array of the results.
-  //          */
-  //         atMost(n: number): Parser<T[]>;
-  //         /**
-  //          * expects parser at least n times. Yields an array of the results.
-  //          */
-  //         atLeast(n: number): Parser<T[]>;
-  //         /**
-  //          * Yields an object with `start`, `value`, and `end` keys, where `value` is the original
-  //          * value yielded by the parser, and `start` and `end` indicate the `Index` objects representing
-  //          * the range of the parse result.
-  //          */
-  //         mark(): Parser<Mark<T>>;
-  //         /**
-  //          * Like `mark()`, but yields an object with an additional `name` key to use as an AST.
-  //          */
-  //         node<Name extends string>(name: Name): Parser<Node<Name, T>>;
-  //         /**
-  //          * Returns a new parser whose failure message is description.
-  //          * For example, string('x').desc('the letter x') will indicate that 'the letter x' was expected.
-  //          */
-  //         desc(description: string | string[]): Parser<T>;
-  //         // Fantasy land support
-  //         /**
-  //          * Returns Parsimmon.fail("fantasy-land/empty").
-  //          */
-  //         empty(): Parser<never>;
+
+  /**
+   * returns a new parser with the same behavior, but which yields aResult.
+   */
+  result<U>(aResult: U): Parser<U>;
+
+  /**
+   * returns a new parser that returns the fallback value if the first parser failed.
+   */
+  fallback<U>(fallbackValue: U): Parser<T | U>;
+
+  /**
+   * expects otherParser after parser, but preserves the yield value of parser.
+   */
+  skip<U>(otherParser: Parser<U>): Parser<T>;
+
+  /**
+   * Expects the parser before before parser and after after parser.
+   */
+  wrap(before: Parser<any>, after: Parser<any>): Parser<T>;
+
+  /**
+   * Returns a parser that looks for anything but whatever anotherParser wants to
+   * parse, and does not consume it. Yields the same result as parser. Equivalent to
+   * parser.skip(Parsimmon.notFollowedBy(anotherParser)).
+   */
+  notFollowedBy(anotherParser: Parser<any>): Parser<T>;
+
+  /**
+   * Returns a parser that looks for whatever arg wants to parse, but does not
+   * consume it. Yields the same result as parser. Equivalent to
+   * parser.skip(Parsimmon.lookahead(anotherParser)).
+   */
+  lookahead(arg: Parser<any> | string | RegExp): Parser<T>;
+
+  /**
+   * Equivalent to parser.tieWith("").
+   *
+   * Note: parser.tie() is usually used after Parsimmon.seq(...parsers) or parser.many().
+   */
+  tie(): Parser<string>;
+  /**
+   * When called on a parser yielding an array of strings, yields all their strings
+   * concatenated with the separator. Asserts that its input is actually an array of strings.
+   */
+  tieWith(join: string): Parser<string>;
+
+  /**
+   * expects parser zero or more times, and yields an array of the results.
+   */
+  many(): Parser<T[]>;
+
+  /**
+   * expects parser exactly n times, and yields an array of the results.
+   */
+  times(n: number): Parser<T[]>;
+  /**
+   * expects parser between min and max times, and yields an array of the results.
+   */
+  // tslint:disable-next-line:unified-signatures
+  times(min: number, max: number): Parser<T[]>;
+  /**
+   * expects parser at most n times. Yields an array of the results.
+   */
+  atMost(n: number): Parser<T[]>;
+  /**
+   * expects parser at least n times. Yields an array of the results.
+   */
+  atLeast(n: number): Parser<T[]>;
+
+  /**
+   * Yields an object with `start`, `value`, and `end` keys, where `value` is the original
+   * value yielded by the parser, and `start` and `end` indicate the `Index` objects representing
+   * the range of the parse result.
+   */
+  mark(): Parser<Mark<T>>;
+
+  /**
+   * Like `mark()`, but yields an object with an additional `name` key to use as an AST.
+   */
+  node<Name extends string>(name: Name): Parser<Node<Name, T>>;
+
+  /**
+   * Returns a new parser whose failure message is description.
+   * For example, string('x').desc('the letter x') will indicate that 'the letter x' was expected.
+   */
+  desc(description: string | string[]): Parser<T>;
+
+  // Fantasy land support
+  /**
+   * Returns Parsimmon.fail("fantasy-land/empty").
+   */
+  empty(): Parser<never>;
 
   /**
    * Takes parser which returns a function and applies it to the parsed value of otherParser.

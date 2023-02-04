@@ -5,9 +5,10 @@ import type {
   SuccessReply,
   TypedLanguage,
   TypedRule,
+  Parser as IParser,
 } from './types';
 
-export class Parser<T = unknown> {
+export class Parser<T = unknown> implements Parser {
   _: (input: string, i: number) => Reply<T>;
   static _supportsSet: boolean;
   constructor(fn: (input: string, i: number) => Reply<T>) {
