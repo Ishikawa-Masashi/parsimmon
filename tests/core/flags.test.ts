@@ -48,7 +48,7 @@ describe('flags()', () => {
       oldRegExpY,
     ];
     // Simulate old RegExp without the flags property
-    oldRegExps.map((r) => {
+    oldRegExps.forEach((r) => {
       Object.defineProperty(r, 'flags', { value: undefined });
       //   assert.strictEqual(r.flags, undefined);
       expect(r.flags).toBeUndefined();
