@@ -6,7 +6,7 @@ describe('bitSeq', () => {
     const b = Buffer.from([0xff, 0xff]);
     const p = Parsimmon.Binary.bitSeq([3, 5, 5, 3]);
     // assert.deepEqual(p.parse(b).value, [7, 31, 31, 7]);
-    expect(p.parse(b as any).value).toEqual([7, 31, 31, 7]);
+    expect(p.parse(b).value).toEqual([7, 31, 31, 7]);
   });
 
   it("disallows construction of parsers that don't align to byte boundaries", function () {
@@ -20,7 +20,7 @@ describe('bitSeq', () => {
     const b = Buffer.from([]);
     const p = Parsimmon.Binary.bitSeq([3, 5, 5, 3]);
     // assert.deepEqual(p.parse(b).expected, ['2 bytes']);
-    expect(p.parse(b as any).expected).toEqual(['2 bytes']);
+    expect(p.parse(b).expected).toEqual(['2 bytes']);
   });
 
   //   it('throws an exception for too large of a range request', function () {

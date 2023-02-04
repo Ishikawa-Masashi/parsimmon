@@ -8,7 +8,7 @@ import type {
   Parser as IParser,
 } from './types';
 
-export class Parser<T = unknown> implements Parser {
+export class Parser<T = unknown> implements IParser<T> {
   _: (input: string, i: number) => Reply<T>;
   static _supportsSet: boolean;
   constructor(fn: (input: string, i: number) => Reply<T>) {
@@ -20,7 +20,7 @@ export class Parser<T = unknown> implements Parser {
   /**
    * parse the string
    */
-  parse(input: string): Result<T> {
+  parse(input: string | Buffer): Result<T> {
     if (typeof input !== 'string' && !isBuffer(input)) {
       throw new Error(
         '.parse must be called with a string or Buffer as its argument'
@@ -693,7 +693,7 @@ function isArray(x: any) {
   return {}.toString.call(x) === '[object Array]';
 }
 
-function isBuffer(x: any) {
+function isBuffer(x: any): x is Buffer {
   /* global Buffer */
   return bufferExists() && Buffer.isBuffer(x);
 }
@@ -1382,7 +1382,8 @@ export function createLanguage<TLanguageSpec>(
   return language;
 }
 
-export function alt<U>(...args: Parser<U>[]) {
+//     function alt<U>(...parsers: Array<Parser<U>>): Parser<U>;
+export function alt<U>(...args: Array<Parser<U>>) {
   const parsers: any = [].slice.call(arguments);
   const numParsers = parsers.length;
   if (numParsers === 0) {
