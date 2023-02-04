@@ -69,12 +69,12 @@ interface Node<Name extends string, T> extends Mark<T> {
 
 export type Result<T> = Success<T> | Failure;
 
-interface Success<T> {
+export interface Success<T> {
   status: true;
   value: T;
 }
 
-interface Failure {
+export interface Failure {
   status: false;
   expected: string[];
   index: Index;

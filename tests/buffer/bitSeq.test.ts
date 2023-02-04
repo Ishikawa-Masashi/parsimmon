@@ -1,12 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import * as Parsimmon from '../../src';
+import { Success } from '../../src/types';
 
 describe('bitSeq', () => {
   it('consumes bits into a sequence from a buffer', () => {
     const b = Buffer.from([0xff, 0xff]);
     const p = Parsimmon.Binary.bitSeq([3, 5, 5, 3]);
     // assert.deepEqual(p.parse(b).value, [7, 31, 31, 7]);
-    expect(p.parse(b).value).toEqual([7, 31, 31, 7]);
+    expect((p.parse(b) as Success<Buffer>).value).toEqual([7, 31, 31, 7]);
   });
 
   it("disallows construction of parsers that don't align to byte boundaries", function () {

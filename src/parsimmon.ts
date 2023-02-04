@@ -506,7 +506,7 @@ function bitSeq(alignments: any) {
     );
   }
 
-  return new Parser(function (input: any, i: any) {
+  return new Parser<Buffer>(function (input: any, i: any) {
     const newPos = bytes + i;
     if (newPos > input.length) {
       return makeFailure(i, bytes.toString() + ' bytes');
