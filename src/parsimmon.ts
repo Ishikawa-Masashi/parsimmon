@@ -1225,7 +1225,7 @@ function seqObj() {
     let result;
     const accum: any = {};
     for (let j = 0; j < numParsers; j += 1) {
-      var name;
+      let name: string | null;
       var parser;
       if (isArray(parsers[j])) {
         name = parsers[j][0];
