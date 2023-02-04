@@ -1,0 +1,58 @@
+import { describe, it, expect } from 'vitest';
+import * as Parsimmon from '../../src/parsimmon';
+
+describe('Parsimmon.seqMap', function () {
+  it('like Parsimmon.seq and .map but spreads arguments', function () {
+    var add = function (a, b) {
+      return a + b;
+    };
+    var parser = Parsimmon.seqMap(Parsimmon.of(1), Parsimmon.of(2), add);
+    // assert.equal(parser.parse("").value, 3);
+    expect(parser.parse('').value).toBe(3);
+  });
+
+  it('works for 1 arguments', function () {
+    var parser = Parsimmon.seqMap(function () {
+      return 10;
+    });
+    // assert.equal(parser.parse("").value, 10);
+    expect(parser.parse('').value).toBe(10);
+  });
+
+  it('works for 100 arguments', function () {
+    var sum = function () {
+      var tot = 0;
+      for (var i = 0; i < arguments.length; i++) {
+        tot += arguments[i];
+      }
+      return tot;
+    };
+    var args = [];
+    for (var i = 1; i <= 100; i++) {
+      args.push(Parsimmon.of(i));
+    }
+    args.push(sum);
+    var parser = Parsimmon.seqMap.apply(null, args);
+    // assert.equal(parser.parse("").value, 5050);
+    expect(parser.parse('').value).toBe(5050);
+  });
+
+  it('asserts the final argument is a function', function () {
+    Parsimmon.seqMap(function () {});
+    // assert.throws(function() {
+    //   Parsimmon.seqMap(1);
+    // });
+    expect(function () {
+      Parsimmon.seqMap(1);
+    }).toThrow();
+  });
+
+  it('asserts at least 1 argument', function () {
+    // assert.throws(function() {
+    //   Parsimmon.seqMap();
+    // });
+    expect(function () {
+      Parsimmon.seqMap();
+    }).toThrow();
+  });
+});

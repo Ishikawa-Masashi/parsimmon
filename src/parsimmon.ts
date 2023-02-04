@@ -1191,7 +1191,7 @@ export function seq(...args: any[]) {
   });
 }
 
-function seqObj() {
+export function seqObj() {
   const seenKeys: any = {};
   let totalKeys = 0;
   const parsers = toArray(arguments);
@@ -1398,7 +1398,7 @@ export function sepBy(parser: any, separator: any) {
   return sepBy1(parser, separator).or(succeed([]));
 }
 
-function sepBy1(parser: any, separator: any) {
+export function sepBy1(parser: any, separator: any) {
   assertParser(parser);
   assertParser(separator);
   const pairs = separator.then(parser).many();
@@ -1448,11 +1448,11 @@ function byte(b: any) {
 
 export function regexp(re: RegExp, group = 0) {
   assertRegexp(re);
-  // if (arguments.length >= 2) {
-  //   assertNumber(group);
-  // } else {
-  //   group = 0;
-  // }
+  if (arguments.length >= 2) {
+    assertNumber(group);
+  } else {
+    //   group = 0;
+  }
   const anchored = anchoredRegexp(re);
   const expected = '' + re;
   return new Parser(function (input: any, i: any) {
@@ -1499,7 +1499,7 @@ export function lookahead(x: any): any {
   throw new Error('not a string, regexp, or parser: ' + x);
 }
 
-function notFollowedBy(parser: any) {
+export function notFollowedBy(parser: any) {
   assertParser(parser);
   return new Parser(function (input: any, i: any) {
     const result = parser._(input, i);
@@ -1513,7 +1513,7 @@ function notFollowedBy(parser: any) {
 /**
  * Returns a parser that yield a single character if it passes the predicate
  */
-function test(predicate: (char: string) => boolean): Parser<string> {
+export function test(predicate: (char: string) => boolean): Parser<string> {
   assertFunction(predicate);
   return new Parser((input, i) => {
     const char = get(input, i);
@@ -1547,7 +1547,7 @@ export function custom(parsingFunction: any) {
 }
 
 // TODO[ES5]: Improve error message using JSON.stringify eventually.
-function range(begin: any, end: any) {
+export function range(begin: any, end: any) {
   return test(function (ch: any) {
     return begin <= ch && ch <= end;
   }).desc(begin + '-' + end);
@@ -1625,11 +1625,11 @@ export const letter = regexp(/[a-z]/i).desc('a letter');
 export const letters = regexp(/[a-z]*/i).desc('optional letters');
 export const optWhitespace = regexp(/\s*/).desc('optional whitespace');
 export const whitespace = regexp(/\s+/).desc('whitespace');
-const cr = string('\r');
-const lf = string('\n');
-const crlf = string('\r\n');
-const newline = alt(crlf, lf, cr).desc('newline');
-const end = alt(newline, eof);
+export const cr = string('\r');
+export const lf = string('\n');
+export const crlf = string('\r\n');
+export const newline = alt(crlf, lf, cr).desc('newline');
+export const end = alt(newline, eof);
 
 // Parsimmon.all = all;
 // Parsimmon.alt = alt;
@@ -1663,7 +1663,7 @@ export const of = succeed;
 // Parsimmon.optWhitespace = optWhitespace;
 // Parsimmon.Parser = Parsimmon;
 // Parsimmon.range = range;
-// Parsimmon.regex = regexp;
+export const regex = regexp;
 // Parsimmon.regexp = regexp;
 // Parsimmon.sepBy = sepBy;
 // Parsimmon.sepBy1 = sepBy1;
