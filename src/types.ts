@@ -57,15 +57,15 @@ interface Index {
   column: number;
 }
 
-//     interface Mark<T> {
-//         start: Index;
-//         end: Index;
-//         value: T;
-//     }
+interface Mark<T> {
+  start: Index;
+  end: Index;
+  value: T;
+}
 
-//     interface Node<Name extends string, T> extends Mark<T> {
-//         name: Name;
-//     }
+interface Node<Name extends string, T> extends Mark<T> {
+  name: Name;
+}
 
 export type Result<T> = Success<T> | Failure;
 
@@ -80,238 +80,251 @@ interface Failure {
   index: Index;
 }
 
-//     interface Rule {
-//         [key: string]: (r: Language) => Parser<any>;
-//     }
+interface Rule {
+  [key: string]: (r: Language) => Parser<any>;
+}
 
-//     interface Language {
-//         [key: string]: Parser<any>;
-//     }
+export interface Language {
+  [key: string]: Parser<any>;
+}
 
-//     type TypedRule<TLanguageSpec> = {
-//         [P in keyof TLanguageSpec]: (r: TypedLanguage<TLanguageSpec>) => Parser<TLanguageSpec[P]>;
-//     };
+export type TypedRule<TLanguageSpec> = {
+  [P in keyof TLanguageSpec]: (
+    r: TypedLanguage<TLanguageSpec>
+  ) => Parser<TLanguageSpec[P]>;
+};
 
-//     type TypedLanguage<TLanguageSpec> = {
-//         [P in keyof TLanguageSpec]: Parser<TLanguageSpec[P]>;
-//     };
+export type TypedLanguage<TLanguageSpec> = {
+  [P in keyof TLanguageSpec]: Parser<TLanguageSpec[P]>;
+};
 
-//     interface Parser<T> {
-//         /**
-//          * parse the string
-//          */
-//         parse(input: string): Result<T>;
-//         /**
-//          * Like parser.parse(input) but either returns the parsed value or throws
-//          * an error on failure. The error object contains additional properties
-//          * about the error.
-//          */
-//         tryParse(input: string): T;
-//         /**
-//          * Passes the result of `parser` to the function `condition`,
-//          * which returns a boolean. If the the condition is false, returns
-//          * a failed parse with the given `message`. Else it returns the
-//          * original result of `parser`.
-//          */
-//         assert(condition: (result: T) => boolean, message: string): Parser<T>;
-//         /**
-//          * returns a new parser which tries parser, and if it fails uses otherParser.
-//          */
-//         or<U>(otherParser: Parser<U>): Parser<T | U>;
-//         /**
-//          * returns a new parser which tries parser, and on success calls the given function
-//          * with the result of the parse, which is expected to return another parser, which
-//          * will be tried next
-//          */
-//         chain<U>(next: (result: T) => Parser<U>): Parser<U>;
-//         /**
-//          * returns a new parser which tries parser, and on success calls the given function
-//          * with the result of the parse, which is expected to return another parser.
-//          */
-//         then<U>(call: (result: T) => Parser<U>): Parser<U>;
-//         /**
-//          * expects anotherParser to follow parser, and yields the result of anotherParser.
-//          * NB: the result of parser here is ignored.
-//          */
-//         then<U>(anotherParser: Parser<U>): Parser<U>;
-//         /**
-//          * Transforms the input of parser with the given function.
-//          */
-//         contramap<U>(fn: (input: T) => U): Parser<U>;
-//         /**
-//          * Transforms the input and output of parser with the given function.
-//          */
-//         promap<U, V>(inputFn: (input: T) => U, outputFn: (output: U) => V): Parser<V>;
-//         /**
-//          * returns wrapper(this) from the parser. Useful for custom functions used
-//          * to wrap your parsers, while keeping with Parsimmon chaining style.
-//          */
-//         thru<U>(call: (wrapper: Parser<T>) => Parser<U>): Parser<U>;
-//         /**
-//          * expects anotherParser before and after parser, yielding the result of parser
-//          */
-//         trim<U>(anotherParser: Parser<U>): Parser<T>;
-//         /**
-//          * transforms the output of parser with the given function.
-//          */
-//         map<U>(call: (result: T) => U): Parser<U>;
-//         /**
-//          * returns a new parser with the same behavior, but which yields aResult.
-//          */
-//         result<U>(aResult: U): Parser<U>;
-//         /**
-//          * returns a new parser that returns the fallback value if the first parser failed.
-//          */
-//         fallback<U>(fallbackValue: U): Parser<T | U>;
-//         /**
-//          * expects otherParser after parser, but preserves the yield value of parser.
-//          */
-//         skip<U>(otherParser: Parser<U>): Parser<T>;
-//         /**
-//          * Expects the parser before before parser and after after parser.
-//          */
-//         wrap(before: Parser<any>, after: Parser<any>): Parser<T>;
-//         /**
-//          * Returns a parser that looks for anything but whatever anotherParser wants to
-//          * parse, and does not consume it. Yields the same result as parser. Equivalent to
-//          * parser.skip(Parsimmon.notFollowedBy(anotherParser)).
-//          */
-//         notFollowedBy(anotherParser: Parser<any>): Parser<T>;
-//         /**
-//          * Returns a parser that looks for whatever arg wants to parse, but does not
-//          * consume it. Yields the same result as parser. Equivalent to
-//          * parser.skip(Parsimmon.lookahead(anotherParser)).
-//          */
-//         lookahead(arg: Parser<any> | string | RegExp): Parser<T>;
-//         /**
-//          * Equivalent to parser.tieWith("").
-//          *
-//          * Note: parser.tie() is usually used after Parsimmon.seq(...parsers) or parser.many().
-//          */
-//         tie(): Parser<string>;
-//         /**
-//          * When called on a parser yielding an array of strings, yields all their strings
-//          * concatenated with the separator. Asserts that its input is actually an array of strings.
-//          */
-//         tieWith(join: string): Parser<string>;
-//         /**
-//          * expects parser zero or more times, and yields an array of the results.
-//          */
-//         many(): Parser<T[]>;
-//         /**
-//          * expects parser exactly n times, and yields an array of the results.
-//          */
-//         times(n: number): Parser<T[]>;
-//         /**
-//          * expects parser between min and max times, and yields an array of the results.
-//          */
-//         // tslint:disable-next-line:unified-signatures
-//         times(min: number, max: number): Parser<T[]>;
-//         /**
-//          * expects parser at most n times. Yields an array of the results.
-//          */
-//         atMost(n: number): Parser<T[]>;
-//         /**
-//          * expects parser at least n times. Yields an array of the results.
-//          */
-//         atLeast(n: number): Parser<T[]>;
-//         /**
-//          * Yields an object with `start`, `value`, and `end` keys, where `value` is the original
-//          * value yielded by the parser, and `start` and `end` indicate the `Index` objects representing
-//          * the range of the parse result.
-//          */
-//         mark(): Parser<Mark<T>>;
-//         /**
-//          * Like `mark()`, but yields an object with an additional `name` key to use as an AST.
-//          */
-//         node<Name extends string>(name: Name): Parser<Node<Name, T>>;
-//         /**
-//          * Returns a new parser whose failure message is description.
-//          * For example, string('x').desc('the letter x') will indicate that 'the letter x' was expected.
-//          */
-//         desc(description: string | string[]): Parser<T>;
+export interface Parser<T> {
+  /**
+   * parse the string
+   */
+  parse(input: string): Result<T>;
 
-//         // Fantasy land support
+  /**
+   * Like parser.parse(input) but either returns the parsed value or throws
+   * an error on failure. The error object contains additional properties
+   * about the error.
+   */
+  tryParse(input: string): T;
 
-//         /**
-//          * Returns Parsimmon.fail("fantasy-land/empty").
-//          */
-//         empty(): Parser<never>;
-//         /**
-//          * Takes parser which returns a function and applies it to the parsed value of otherParser.
-//          */
-//         ap<U>(otherParser: Parser<(t: T) => U>): Parser<U>;
-//         /**
-//          * Equivalent to Parsimmon.sepBy(parser, separator).
-//          *
-//          * Expects zero or more matches for parser, separated by the parser separator, yielding an array.
-//          */
-//         sepBy<U>(separator: Parser<U>): Parser<T[]>;
-//         /**
-//          * Equivalent to Parsimmon.sepBy(parser, separator).
-//          *
-//          * Expects one or more matches for parser, separated by the parser separator, yielding a non-empty array.
-//          */
-//         sepBy1<U>(separator: Parser<U>): Parser<[T, ...T[]]>;
-//         /**
-//          * Equivalent to Parsimmon.of(result).
-//          */
-//         of<U>(result: U): Parser<U>;
-//     }
+  /**
+   * Passes the result of `parser` to the function `condition`,
+   * which returns a boolean. If the the condition is false, returns
+   * a failed parse with the given `message`. Else it returns the
+   * original result of `parser`.
+   */
+  assert(condition: (result: T) => boolean, message: string): Parser<T>;
 
-// export type UnParser<T> = T extends Parser<infer U> ? U : never;
+  /**
+   * returns a new parser which tries parser, and if it fails uses otherParser.
+   */
+  or<U>(otherParser: Parser<U>): Parser<T | U>;
+
+  /**
+   * returns a new parser which tries parser, and on success calls the given function
+   * with the result of the parse, which is expected to return another parser, which
+   * will be tried next
+   */
+  chain<U>(next: (result: T) => Parser<U>): Parser<U>;
+
+  /**
+   * returns a new parser which tries parser, and on success calls the given function
+   * with the result of the parse, which is expected to return another parser.
+   */
+  then<U>(call: (result: T) => Parser<U>): Parser<U>;
+
+  /**
+   * expects anotherParser to follow parser, and yields the result of anotherParser.
+   * NB: the result of parser here is ignored.
+   */
+  then<U>(anotherParser: Parser<U>): Parser<U>;
+
+  /**
+   * Transforms the input of parser with the given function.
+   */
+  contramap<U>(fn: (input: T) => U): Parser<U>;
+
+  /**
+   * Transforms the input and output of parser with the given function.
+   */
+  promap<U, V>(inputFn: (input: T) => U, outputFn: (output: U) => V): Parser<V>;
+
+  /**
+   * returns wrapper(this) from the parser. Useful for custom functions used
+   * to wrap your parsers, while keeping with Parsimmon chaining style.
+   */
+  thru<U>(call: (wrapper: Parser<T>) => Parser<U>): Parser<U>;
+  //         /**
+  //          * expects anotherParser before and after parser, yielding the result of parser
+  //          */
+  //         trim<U>(anotherParser: Parser<U>): Parser<T>;
+
+  /**
+   * transforms the output of parser with the given function.
+   */
+  map<U>(call: (result: T) => U): Parser<U>;
+  //         /**
+  //          * returns a new parser with the same behavior, but which yields aResult.
+  //          */
+  //         result<U>(aResult: U): Parser<U>;
+  //         /**
+  //          * returns a new parser that returns the fallback value if the first parser failed.
+  //          */
+  //         fallback<U>(fallbackValue: U): Parser<T | U>;
+  //         /**
+  //          * expects otherParser after parser, but preserves the yield value of parser.
+  //          */
+  //         skip<U>(otherParser: Parser<U>): Parser<T>;
+  //         /**
+  //          * Expects the parser before before parser and after after parser.
+  //          */
+  //         wrap(before: Parser<any>, after: Parser<any>): Parser<T>;
+  //         /**
+  //          * Returns a parser that looks for anything but whatever anotherParser wants to
+  //          * parse, and does not consume it. Yields the same result as parser. Equivalent to
+  //          * parser.skip(Parsimmon.notFollowedBy(anotherParser)).
+  //          */
+  //         notFollowedBy(anotherParser: Parser<any>): Parser<T>;
+  //         /**
+  //          * Returns a parser that looks for whatever arg wants to parse, but does not
+  //          * consume it. Yields the same result as parser. Equivalent to
+  //          * parser.skip(Parsimmon.lookahead(anotherParser)).
+  //          */
+  //         lookahead(arg: Parser<any> | string | RegExp): Parser<T>;
+  //         /**
+  //          * Equivalent to parser.tieWith("").
+  //          *
+  //          * Note: parser.tie() is usually used after Parsimmon.seq(...parsers) or parser.many().
+  //          */
+  //         tie(): Parser<string>;
+  //         /**
+  //          * When called on a parser yielding an array of strings, yields all their strings
+  //          * concatenated with the separator. Asserts that its input is actually an array of strings.
+  //          */
+  //         tieWith(join: string): Parser<string>;
+  //         /**
+  //          * expects parser zero or more times, and yields an array of the results.
+  //          */
+  //         many(): Parser<T[]>;
+  //         /**
+  //          * expects parser exactly n times, and yields an array of the results.
+  //          */
+  //         times(n: number): Parser<T[]>;
+  //         /**
+  //          * expects parser between min and max times, and yields an array of the results.
+  //          */
+  //         // tslint:disable-next-line:unified-signatures
+  //         times(min: number, max: number): Parser<T[]>;
+  //         /**
+  //          * expects parser at most n times. Yields an array of the results.
+  //          */
+  //         atMost(n: number): Parser<T[]>;
+  //         /**
+  //          * expects parser at least n times. Yields an array of the results.
+  //          */
+  //         atLeast(n: number): Parser<T[]>;
+  //         /**
+  //          * Yields an object with `start`, `value`, and `end` keys, where `value` is the original
+  //          * value yielded by the parser, and `start` and `end` indicate the `Index` objects representing
+  //          * the range of the parse result.
+  //          */
+  //         mark(): Parser<Mark<T>>;
+  //         /**
+  //          * Like `mark()`, but yields an object with an additional `name` key to use as an AST.
+  //          */
+  //         node<Name extends string>(name: Name): Parser<Node<Name, T>>;
+  //         /**
+  //          * Returns a new parser whose failure message is description.
+  //          * For example, string('x').desc('the letter x') will indicate that 'the letter x' was expected.
+  //          */
+  //         desc(description: string | string[]): Parser<T>;
+  //         // Fantasy land support
+  //         /**
+  //          * Returns Parsimmon.fail("fantasy-land/empty").
+  //          */
+  //         empty(): Parser<never>;
+
+  /**
+   * Takes parser which returns a function and applies it to the parsed value of otherParser.
+   */
+  ap<U>(otherParser: Parser<(t: T) => U>): Parser<U>;
+
+  /**
+   * Equivalent to Parsimmon.sepBy(parser, separator).
+   *
+   * Expects zero or more matches for parser, separated by the parser separator, yielding an array.
+   */
+  sepBy<U>(separator: Parser<U>): Parser<T[]>;
+
+  /**
+   * Equivalent to Parsimmon.sepBy(parser, separator).
+   *
+   * Expects one or more matches for parser, separated by the parser separator, yielding a non-empty array.
+   */
+  sepBy1<U>(separator: Parser<U>): Parser<[T, ...T[]]>;
+  /**
+   * Equivalent to Parsimmon.of(result).
+   */
+  of<U>(result: U): Parser<U>;
+}
+
+export type UnParser<T> = T extends Parser<infer U> ? U : never;
 
 //     /**
 //      * Alias of `Parsimmon(fn)` for backwards compatibility.
 //      */
 //     function Parser<T>(fn: (input: string, i: number) => Parsimmon.Reply<T>): Parser<T>;
 
-//     /**
-//      * Starting point for building a language parser in Parsimmon.
-//      *
-//      * For having the resulting language rules return typed parsers, e.g. `Parser<Foo>` instead of
-//      * `Parser<any>`, pass a language specification as type parameter to this function. The language
-//      * specification should be of the following form:
-//      *
-//      * ```javascript
-//      * {
-//      *   rule1: type;
-//      *   rule2: type;
-//      * }
-//      * ```
-//      *
-//      * For example:
-//      *
-//      * ```javascript
-//      * const language = Parsimmon.createLanguage<{
-//      *   expr: Expr;
-//      *   numberLiteral: number;
-//      *   stringLiteral: string;
-//      * }>({
-//      *   expr: r => (some expression that yields Parser<Expr>),
-//      *   numberLiteral: r => (some expression that yields Parser<number>),
-//      *   stringLiteral: r => (some expression that yields Parser<string>)
-//      * });
-//      * ```
-//      *
-//      * Now both `language` and the parameter `r` that is passed into every parser rule will be of the
-//      * following type:
-//      *
-//      * ```javascript
-//      * {
-//      *   expr: Parser<Expr>;
-//      *   numberLiteral: Parser<number>;
-//      *   stringLiteral: Parser<string>;
-//      * }
-//      * ```
-//      *
-//      * Another benefit is that both the `rules` parameter and the resulting `language` should match the
-//      * properties defined in the language specification type, which means that the compiler checks that
-//      * there are no missing or superfluous rules in the language definition, and that the rules you access
-//      * on the resulting language do actually exist.
-//      */
+/**
+ * Starting point for building a language parser in Parsimmon.
+ *
+ * For having the resulting language rules return typed parsers, e.g. `Parser<Foo>` instead of
+ * `Parser<any>`, pass a language specification as type parameter to this function. The language
+ * specification should be of the following form:
+ *
+ * ```javascript
+ * {
+ *   rule1: type;
+ *   rule2: type;
+ * }
+ * ```
+ *
+ * For example:
+ *
+ * ```javascript
+ * const language = Parsimmon.createLanguage<{
+ *   expr: Expr;
+ *   numberLiteral: number;
+ *   stringLiteral: string;
+ * }>({
+ *   expr: r => (some expression that yields Parser<Expr>),
+ *   numberLiteral: r => (some expression that yields Parser<number>),
+ *   stringLiteral: r => (some expression that yields Parser<string>)
+ * });
+ * ```
+ *
+ * Now both `language` and the parameter `r` that is passed into every parser rule will be of the
+ * following type:
+ *
+ * ```javascript
+ * {
+ *   expr: Parser<Expr>;
+ *   numberLiteral: Parser<number>;
+ *   stringLiteral: Parser<string>;
+ * }
+ * ```
+ *
+ * Another benefit is that both the `rules` parameter and the resulting `language` should match the
+ * properties defined in the language specification type, which means that the compiler checks that
+ * there are no missing or superfluous rules in the language definition, and that the rules you access
+ * on the resulting language do actually exist.
+ */
 //     function createLanguage(rules: Rule): Language;
-//     function createLanguage<TLanguageSpec>(rules: TypedRule<TLanguageSpec>): TypedLanguage<TLanguageSpec>;
+// function createLanguage<TLanguageSpec>(rules: TypedRule<TLanguageSpec>): TypedLanguage<TLanguageSpec>;
 
 //     /**
 //      * To be used inside of Parsimmon(fn). Generates an object describing how

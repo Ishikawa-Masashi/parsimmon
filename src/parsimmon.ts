@@ -1,4 +1,11 @@
-import type { FailureReply, Reply, Result, SuccessReply } from './types';
+import type {
+  FailureReply,
+  Reply,
+  Result,
+  SuccessReply,
+  TypedLanguage,
+  TypedRule,
+} from './types';
 
 export class Parser<T = unknown> {
   _: (input: string, i: number) => Reply<T>;
@@ -1357,13 +1364,15 @@ export function seqMap(...args2: any[]) {
 }
 
 // TODO[ES5]: Revisit this with Object.keys and .bind.
-export function createLanguage(parsers: any) {
+export function createLanguage<TLanguageSpec>(
+  rules: TypedRule<TLanguageSpec>
+): TypedLanguage<TLanguageSpec> {
   const language: any = {};
-  for (const key in parsers) {
-    if ({}.hasOwnProperty.call(parsers, key)) {
+  for (const key in rules) {
+    if ({}.hasOwnProperty.call(rules, key)) {
       (function (key) {
         const func = function () {
-          return parsers[key](language);
+          return rules[key](language);
         };
         language[key] = lazy(func);
       })(key);

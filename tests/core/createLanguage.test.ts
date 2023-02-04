@@ -1,4 +1,5 @@
 import * as Parsimmon from '../../src';
+import { Parser } from '../../src/types';
 
 describe('Parsimmon.createLanguage', () => {
   //   beforeEach(() => {
@@ -48,7 +49,7 @@ describe('Parsimmon.createLanguage', () => {
   });
 
   it('should allow indirect recursion in parsers', () => {
-    const lang = Parsimmon.createLanguage({
+    const lang = Parsimmon.createLanguage<{ Number: Parser<number> }>({
       Value: function (r: any) {
         return Parsimmon.alt(r.Number, r.Symbol, r.List);
       },
