@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import * as Parsimmon from '../../src';
 
 describe('bitSeq', () => {
@@ -8,17 +9,19 @@ describe('bitSeq', () => {
     expect(p.parse(b as any).value).toEqual([7, 31, 31, 7]);
   });
 
-  //   it("disallows construction of parsers that don't align to byte boundaries", function () {
-  //     assert.throws(function () {
-  //       Parsimmon.Binary.bitSeq([1, 2]);
-  //     }, /add up to 3/);
-  //   });
+  it("disallows construction of parsers that don't align to byte boundaries", function () {
+    // assert.throws(function () {
+    //   Parsimmon.Binary.bitSeq([1, 2]);
+    // }, /add up to 3/);
+    expect(() => Parsimmon.Binary.bitSeq([1, 2])).toThrowError();
+  });
 
-  //   it('fails if requesting too much', function () {
-  //     var b = Buffer.from([]);
-  //     var p = Parsimmon.Binary.bitSeq([3, 5, 5, 3]);
-  //     assert.deepEqual(p.parse(b).expected, ['2 bytes']);
-  //   });
+  it('fails if requesting too much', () => {
+    const b = Buffer.from([]);
+    const p = Parsimmon.Binary.bitSeq([3, 5, 5, 3]);
+    // assert.deepEqual(p.parse(b).expected, ['2 bytes']);
+    expect(p.parse(b as any).expected).toEqual(['2 bytes']);
+  });
 
   //   it('throws an exception for too large of a range request', function () {
   //     assert.throws(function () {
