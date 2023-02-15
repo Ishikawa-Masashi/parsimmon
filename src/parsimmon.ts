@@ -82,15 +82,15 @@ export class Parser<T = unknown> {
   /**
    * returns a new parser which tries parser, and if it fails uses otherParser.
    */
-  or(alternative: Parser<T>): Parser<T> {
+  or<U>(alternative: Parser<T>): Parser<T | U> {
     return alt(this, alternative);
   }
 
   /**
    * expects anotherParser before and after parser, yielding the result of parser
    */
-  trim<U>(parser: Parser<U>): Parser<T> {
-    return this.wrap(parser, parser);
+  trim<U>(anotherParser: Parser<U>): Parser<T> {
+    return this.wrap(anotherParser, anotherParser);
   }
 
   /**
@@ -949,10 +949,10 @@ function toChunks(arr: any, chunkSize: any) {
 
 // Get a range of indexes including `i`-th element and `before` and `after` amount of elements from `arr`.
 function rangeFromIndexAndOffsets(
-  i: any,
-  before: any,
-  after: any,
-  length: any
+  i: number,
+  before: number,
+  after: number,
+  length: number
 ) {
   return {
     // Guard against the negative upper bound for lines included in the output.
@@ -1381,9 +1381,9 @@ export function createLanguage<TLanguageSpec>(
   return language;
 }
 
-//     function alt<U>(...parsers: Array<Parser<U>>): Parser<U>;
-export function alt<U>(...args: Array<Parser<U>>) {
-  const parsers: any = [].slice.call(arguments);
+export function alt<U>(...parsers: Array<Parser<U>>): Parser<U>;
+export function alt(...parsers: Array<Parser<any>>): Parser<any> {
+  //   const parsers = [...args];
   const numParsers = parsers.length;
   if (numParsers === 0) {
     return fail('zero alternates');
@@ -1391,7 +1391,7 @@ export function alt<U>(...args: Array<Parser<U>>) {
   for (let j = 0; j < numParsers; j += 1) {
     assertParser(parsers[j]);
   }
-  return new Parser<U>((input, i) => {
+  return new Parser((input, i) => {
     let result;
     for (let j = 0; j < parsers.length; j += 1) {
       result = mergeReplies(parsers[j]._(input, i), result);
@@ -1557,8 +1557,8 @@ export function custom(parsingFunction: any) {
 }
 
 // TODO[ES5]: Improve error message using JSON.stringify eventually.
-export function range(begin: any, end: any) {
-  return test(function (ch: any) {
+export function range(begin: string, end: string) {
+  return test((ch) => {
     return begin <= ch && ch <= end;
   }).desc(begin + '-' + end);
 }
@@ -1607,22 +1607,22 @@ export function empty() {
 
 // -*- Base Parsers -*-
 
-export const index = new Parser(function (input: any, i: any) {
+export const index = new Parser((input, i) => {
   return makeSuccess(i, makeLineColumnIndex(input, i));
 });
 
-export const any = new Parser(function (input: any, i: any) {
+export const any = new Parser((input, i) => {
   if (i >= input.length) {
     return makeFailure(i, 'any character/byte');
   }
   return makeSuccess(i + 1, get(input, i));
 });
 
-export const all = new Parser(function (input: any, i: any) {
+export const all = new Parser((input, i) => {
   return makeSuccess(input.length, input.slice(i));
 });
 
-export const eof = new Parser(function (input: any, i: any) {
+export const eof = new Parser((input, i) => {
   if (i < input.length) {
     return makeFailure(i, 'EOF');
   }
