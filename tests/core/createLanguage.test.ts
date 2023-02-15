@@ -1,5 +1,5 @@
 import * as Parsimmon from '../../src';
-import { Parser } from '../../src/types';
+import { TypedLanguage } from '../../src/types';
 
 describe('Parsimmon.createLanguage', () => {
   //   beforeEach(() => {
@@ -88,5 +88,35 @@ describe('Parsimmon.createLanguage', () => {
       },
     });
     lang.Value.tryParse('(list 1 2 foo (list nice 3 56 989 asdasdas))');
+  });
+
+  it('should allow indirect recursion in parsers', () => {
+    class Foo {
+      bar: Bar;
+    }
+
+    class Bar {
+      foo: Foo;
+    }
+    let fooPar: Parsimmon.Parser<Foo> = null!;
+    let barPar: Parsimmon.Parser<Bar> = null!;
+    interface MyLanguageSpec {
+      FooRule: Foo;
+      BarRule: Bar;
+      StringRule: string;
+    }
+
+    const myLanguage = Parsimmon.createLanguage<MyLanguageSpec>({
+      FooRule: (r) => {
+        fooPar = r.FooRule;
+        barPar = r.BarRule;
+        strPar = r.StringRule;
+        return fooPar;
+      },
+      BarRule: (r) => barPar,
+      StringRule: () => strPar,
+    });
+    expect(myLanguage.BarRule).toBeTruthy();
+    // myLanguage.BarRule
   });
 });
