@@ -48,25 +48,6 @@ describe('Parsimmon.createLanguage', () => {
   });
 
   it('should allow indirect recursion in parsers', () => {
-    // const rules = {
-    //   Value: function (r: typeof rules2) {
-    //     return Parsimmon.alt(r.Number, r.Symbol, r.List);
-    //   },
-    //   Number: function () {
-    //     return Parsimmon.regexp(/[0-9]+/).map(Number);
-    //   },
-    //   Symbol: function () {
-    //     return Parsimmon.regexp(/[a-z]+/);
-    //   },
-    //   List: function (r: any) {
-    //     return Parsimmon.string('(')
-    //       .then(Parsimmon.sepBy(r.Value, r._))
-    //       .skip(Parsimmon.string(')'));
-    //   },
-    //   _: function () {
-    //     return Parsimmon.optWhitespace;
-    //   },
-    // };
     const lang = Parsimmon.createLanguage({
       Value: function (r: any) {
         return Parsimmon.alt(r.Number, r.Symbol, r.List);
