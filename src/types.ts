@@ -46,57 +46,6 @@
 // declare function Parsimmon<T>(fn: (input: string, i: number) => Parsimmon.Reply<T>): Parsimmon.Parser<T>;
 
 // declare namespace Parsimmon {
-export type StreamType = string;
-
-interface Index {
-  /** zero-based character offset */
-  offset: number;
-  /** one-based line offset */
-  line: number;
-  /** one-based column offset */
-  column: number;
-}
-
-interface Mark<T> {
-  start: Index;
-  end: Index;
-  value: T;
-}
-
-interface Node<Name extends string, T> extends Mark<T> {
-  name: Name;
-}
-
-export type Result<T> = Success<T> | Failure;
-
-export interface Success<T> {
-  status: true;
-  value: T;
-}
-
-export interface Failure {
-  status: false;
-  expected: string[];
-  index: Index;
-}
-
-interface Rule {
-  [key: string]: (r: Language) => Parser<any>;
-}
-
-export interface Language {
-  [key: string]: Parser<any>;
-}
-
-export type TypedRule<TLanguageSpec> = {
-  [P in keyof TLanguageSpec]: (
-    r: TypedLanguage<TLanguageSpec>
-  ) => Parser<TLanguageSpec[P]>;
-};
-
-export type TypedLanguage<TLanguageSpec> = {
-  [P in keyof TLanguageSpec]: Parser<TLanguageSpec[P]>;
-};
 
 export interface Parser<T> {
   /**
@@ -457,24 +406,6 @@ export type UnParser<T> = T extends Parser<infer U> ? U : never;
 //         cb: (a1: T, a2: U, a3: V, a4: W, a5: X, a6: Y, a7: Z, a8: A, a9: B, a10: C) => D): Parser<D>;
 
 //     function seqObj<T, Key extends keyof T = keyof T>(...args: Array<[Key, Parser<T[Key]>] | Parser<any>>): Parser<{ [K in Key]: T[K] }>;
-
-export interface SuccessReply<T> {
-  status: true;
-  index: number;
-  value: T;
-  furthest: -1;
-  expected: string[];
-}
-
-export interface FailureReply {
-  status: false;
-  index: -1;
-  value: null;
-  furthest: number;
-  expected: string[];
-}
-
-export type Reply<T> = SuccessReply<T> | FailureReply;
 
 type SuccessFunctionType<U> = (index: number, result: U) => Reply<U>;
 type FailureFunctionType<U> = (index: number, msg: string) => Reply<U>;

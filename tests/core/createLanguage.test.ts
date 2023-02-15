@@ -1,5 +1,4 @@
 import * as Parsimmon from '../../src';
-import { TypedLanguage } from '../../src/types';
 
 describe('Parsimmon.createLanguage', () => {
   //   beforeEach(() => {
@@ -98,8 +97,11 @@ describe('Parsimmon.createLanguage', () => {
     class Bar {
       foo: Foo;
     }
+
     let fooPar: Parsimmon.Parser<Foo> = null!;
     let barPar: Parsimmon.Parser<Bar> = null!;
+    let strPar: Parsimmon.Parser<string>;
+
     interface MyLanguageSpec {
       FooRule: Foo;
       BarRule: Bar;

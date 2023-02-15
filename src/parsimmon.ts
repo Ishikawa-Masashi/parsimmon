@@ -1,14 +1,74 @@
-import type {
-  FailureReply,
-  Reply,
-  Result,
-  SuccessReply,
-  TypedLanguage,
-  TypedRule,
-  Parser as IParser,
-} from './types';
+export type StreamType = string;
 
-export class Parser<T = unknown> implements IParser<T> {
+interface Index {
+  /** zero-based character offset */
+  offset: number;
+  /** one-based line offset */
+  line: number;
+  /** one-based column offset */
+  column: number;
+}
+
+interface Mark<T> {
+  start: Index;
+  end: Index;
+  value: T;
+}
+
+interface Node<Name extends string, T> extends Mark<T> {
+  name: Name;
+}
+
+export interface Success<T> {
+  status: true;
+  value: T;
+}
+
+export interface Failure {
+  status: false;
+  expected: string[];
+  index: Index;
+}
+
+export interface Language {
+  [key: string]: Parser<any>;
+}
+
+interface Rule {
+  [key: string]: (r: Language) => Parser<any>;
+}
+
+export interface FailureReply {
+  status: false;
+  index: -1;
+  value: null;
+  furthest: number;
+  expected: string[];
+}
+
+export type Reply<T> = SuccessReply<T> | FailureReply;
+
+export type Result<T> = Success<T> | Failure;
+
+export interface SuccessReply<T> {
+  status: true;
+  index: number;
+  value: T;
+  furthest: -1;
+  expected: string[];
+}
+
+export type TypedLanguage<TLanguageSpec> = {
+  [P in keyof TLanguageSpec]: Parser<TLanguageSpec[P]>;
+};
+
+export type TypedRule<TLanguageSpec> = {
+  [P in keyof TLanguageSpec]: (
+    r: TypedLanguage<TLanguageSpec>
+  ) => Parser<TLanguageSpec[P]>;
+};
+
+export class Parser<T = unknown> {
   _: (input: string, i: number) => Reply<T>;
   static _supportsSet: boolean;
   constructor(fn: (input: string, i: number) => Reply<T>) {
